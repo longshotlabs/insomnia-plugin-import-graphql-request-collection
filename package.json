@@ -21,7 +21,8 @@
     "typescript": "^4.2.4"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "graphql": "^15.5.0"
