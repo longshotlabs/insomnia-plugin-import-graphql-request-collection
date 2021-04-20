@@ -1,0 +1,29 @@
+{
+  "name": "insomna-plugin-import-graphql-request-collection",
+  "version": "1.0.0",
+  "main": "build/plugin.js",
+  "insomnia": {
+    "name": "import-graphql-request-collection",
+    "displayName": "Import GraphQL Request Collection Plugin",
+    "description": "Gets the GraphQL schema from a URL and creates a request collection for all possible queries and mutations",
+    "images": {
+      "icon": "icon.svg",
+      "cover": "cover.svg"
+    },
+    "publisher": {
+      "name": "Long Shot Labs"
+    },
+    "applications": {
+      "core": "2021.2.2"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^4.2.4"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "graphql": "^15.5.0"
+  }
+}
