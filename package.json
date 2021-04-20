@@ -22,7 +22,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "install-on-mac": "npm install && npm run build && mkdir -p \"~/Library/Application\\ Support/Insomnia/plugins/\" && cp -r ./ \"~/Library/Application\\ Support/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection\"",
+    "install-on-ubuntu": "npm install && npm run build && mkdir -p ~/.config/Insomnia/plugins/ && cp -r ./ ~/.config/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection"
   },
   "dependencies": {
     "graphql": "^15.5.0"
