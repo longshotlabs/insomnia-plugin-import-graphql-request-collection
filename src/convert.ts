@@ -1,5 +1,5 @@
 import { buildInsomniaDataFile } from "./insomnia";
-import instrospectionQueryString from "./instrospectionQueryString";
+import introspectionQueryString from "./introspectionQueryString";
 
 const rootMutationName = "Mutation";
 const rootQueryName = "Query";
@@ -30,7 +30,7 @@ export default async function convert(url: string): Promise<string> {
 
   const schema = await getSchema(
     url,
-    instrospectionQueryString,
+    introspectionQueryString,
     requestHeaders
   );
 

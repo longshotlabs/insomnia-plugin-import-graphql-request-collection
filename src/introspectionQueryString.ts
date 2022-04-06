@@ -1,4 +1,4 @@
-const instrospectionQueryString = `
+const introspectionQueryString = `
   query IntrospectionQuery {
       __schema {
           queryType {
@@ -94,4 +94,4 @@ const instrospectionQueryString = `
   }
 `;
 
-export default instrospectionQueryString;
+export default introspectionQueryString;
