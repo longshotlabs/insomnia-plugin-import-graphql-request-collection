@@ -1,10 +1,14 @@
-import {
-  IntrospectionInputValue,
+import type {
   IntrospectionField,
+  IntrospectionInputValue,
+  IntrospectionObjectType,
   IntrospectionSchema,
   IntrospectionType,
 } from "graphql";
 import { FullArgumentMap } from "./types";
+
+const rootMutationName = "Mutation";
+const rootQueryName = "Query";
 
 interface GqlType {
   kind: string;
@@ -12,10 +16,37 @@ interface GqlType {
   ofType?: GqlType | null;
 }
 
-export function getMostSpecificType(type: GqlType): GqlType {
-  if (type.kind !== "NON_NULL" && type.kind !== "LIST") return type;
-  if (type.ofType == null) return type;
-  return getMostSpecificType(type.ofType);
+interface ProcessSchemaResult {
+  mutations: QueryInfo[];
+  queries: QueryInfo[];
+}
+
+
+type QueryType = "mutation" | "query";
+
+interface QueryIdentifier {
+  name?: string;
+  type?: QueryType;
+}
+interface GenerateGraphQLTestFileInput {
+  queries: QueryIdentifier[];
+  url: string;
+}
+
+interface QueryInfo {
+  name: string;
+  gql: string;
+  variables: Record<string, any>; // eslint-disable-line
+}
+
+export function getMostSpecificType(
+  type: GqlType,
+  isParentTypeNonNull = false
+): [GqlType, boolean] {
+  if (type.kind !== "NON_NULL" && type.kind !== "LIST")
+    return [type, isParentTypeNonNull];
+  if (type.ofType == null) return [type, isParentTypeNonNull];
+  return getMostSpecificType(type.ofType, type.kind === "NON_NULL");
 }
 
 function getVariableNameForArg(
@@ -30,8 +61,8 @@ function getVariableNameForArg(
 
 export function getDefaultValueForArg(
   arg: IntrospectionInputValue
-): string | number | boolean | {} {
-  const type = getMostSpecificType(arg.type);
+): string | number | boolean | Record<string, never> {
+  const [type] = getMostSpecificType(arg.type);
   if (type.kind === "OBJECT") return {};
   if (type.kind === "SCALAR") {
     if (type.name === "String" || type.name === "ID") return "";
@@ -47,20 +78,24 @@ export function buildQueryArgs(variables: FullArgumentMap): string {
   }
 
   const argStrings = [...variables.entries()].map(([variableName, { arg }]) => {
-    let isRequired = arg.type.kind === "NON_NULL";
-    let innerType;
+    const isRequired = arg.type.kind === "NON_NULL";
+    let innerType: any; // eslint-disable-line
     if (isRequired) {
-      // @ts-expect-error
       innerType = arg.type.ofType;
     } else {
       innerType = arg.type;
     }
 
-    let argString;
+    const [mostSpecificType, isMostSpecificTypeRequired] =
+      getMostSpecificType(innerType);
+
+    let argString: string;
     if (innerType.kind == "LIST") {
-      argString = `$${variableName}: [${getMostSpecificType(innerType).name}]`;
+      argString = `$${variableName}: [${mostSpecificType.name}${
+        isMostSpecificTypeRequired ? "!" : ""
+      }]`;
     } else {
-      argString = `$${variableName}: ${getMostSpecificType(innerType).name}`;
+      argString = `$${variableName}: ${mostSpecificType.name}`;
     }
 
     if (isRequired) argString += "!";
@@ -73,13 +108,13 @@ export function buildQueryArgs(variables: FullArgumentMap): string {
 
 export function buildEndpointArgs(
   args: readonly IntrospectionInputValue[],
-  prefix: string = ""
+  prefix = ""
 ): string {
   if (args.length == 0) {
     return "";
   }
 
-  let argString = args
+  const argString = args
     .map((arg) => `${arg.name}: $${getVariableNameForArg(arg, prefix)}`)
     .join(", ");
 
@@ -104,22 +139,16 @@ export function buildField(
 ): string {
   let result = "";
 
-  let specificType = getMostSpecificType(field.type);
+  const [specificType] = getMostSpecificType(field.type);
 
-  let typeName = specificType.name;
+  const typeName = specificType.name;
   if (typeName == null || typeName.length === 0) return result;
 
   const tabs = new Array(currentDepth).fill("\t").join("");
-  let variableNamePrefix = currentDepth > 1 ? field.name : "";
+  const variableNamePrefix = currentDepth > 1 ? field.name : "";
 
   result +=
     tabs + field.name + buildEndpointArgs(field.args, variableNamePrefix);
-
-  for (const arg of field.args) {
-    variables.set(getVariableNameForArg(arg, variableNamePrefix), {
-      arg,
-    });
-  }
 
   const returnType = types.find(
     (type) => type.name === typeName
@@ -149,6 +178,64 @@ export function buildField(
       .join("\n");
 
     result += "\n" + tabs + "}";
+  }
+
+  // Be sure to keep this after the above `if` block. We don't want to
+  // do this if we hit MAX_DEPTH and return "".
+  for (const arg of field.args) {
+    variables.set(getVariableNameForArg(arg, variableNamePrefix), {
+      arg,
+    });
+  }
+
+  return result;
+}
+
+// eslint-disable-next-line
+export function processSchema(schema: any): ProcessSchemaResult {
+  const result: ProcessSchemaResult = {
+    mutations: [],
+    queries: [],
+  };
+
+  const types: IntrospectionSchema["types"] = schema.data.__schema.types;
+  for (const type of types) {
+    if (type.name !== rootQueryName && type.name !== rootMutationName) continue;
+
+    const requestType = type.name == rootQueryName ? "query" : "mutation";
+
+    const fields = [...(type as IntrospectionObjectType).fields];
+    fields.sort((a, b) => {
+      if (a.name < b.name) {
+        return -1;
+      }
+      if (a.name > b.name) {
+        return 1;
+      }
+      return 0;
+    });
+
+    for (const rootField of fields) {
+      const variables: FullArgumentMap = new Map();
+      const requestMainBody = buildField(rootField, { variables, types });
+
+      let queryArgsText = buildQueryArgs(variables);
+      if (queryArgsText.length > 0) queryArgsText = " " + queryArgsText;
+
+      const gql =
+        requestType + queryArgsText + " {\n" + requestMainBody + "\n}";
+
+      const variablesObj: Record<string, any> = {}; // eslint-disable-line
+      for (const [variableName, { arg }] of variables.entries()) {
+        variablesObj[variableName] = getDefaultValueForArg(arg);
+      }
+
+      result[requestType === "query" ? "queries" : "mutations"].push({
+        gql,
+        name: rootField.name,
+        variables: variablesObj,
+      });
+    }
   }
 
   return result;

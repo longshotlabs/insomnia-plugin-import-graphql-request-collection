@@ -1,9 +1,6 @@
 import { buildInsomniaDataFile } from "./insomnia";
 import introspectionQueryString from "./introspectionQueryString";
 
-const rootMutationName = "Mutation";
-const rootQueryName = "Query";
-
 async function getSchema(
   url: string,
   query: string,
@@ -23,10 +20,6 @@ async function getSchema(
 
 export default async function convert(url: string): Promise<string> {
   let requestHeaders: Record<string, string> = {};
-  // headers.forEach(header => {
-  //     const [key, value] = header.split(':');
-  //     requestHeaders[key.trim()] = value.trim();
-  // });
 
   const schema = await getSchema(
     url,
@@ -34,5 +27,5 @@ export default async function convert(url: string): Promise<string> {
     requestHeaders
   );
 
-  return buildInsomniaDataFile(schema, url, rootQueryName, rootMutationName);
+  return buildInsomniaDataFile(schema, url);
 }

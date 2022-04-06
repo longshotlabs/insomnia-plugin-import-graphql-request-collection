@@ -1,70 +1,53 @@
 import {
-  FullArgumentMap,
   Root,
   RequestGroup,
   Request,
   RequestBody,
 } from "./types";
-import type { IntrospectionObjectType, IntrospectionSchema } from "graphql";
-import { buildField, buildQueryArgs, getDefaultValueForArg } from "./utils";
+import type { IntrospectionSchema } from "graphql";
+import { processSchema } from "./utils";
 
 export function buildInsomniaDataFile(
   schema: any,
-  url: string,
-  rootQueryName: string,
-  rootMutationName: string
+  url: string
 ): string {
   let rootExport = new Root();
   const types: IntrospectionSchema["types"] = schema.data.__schema.types;
   let graphQLRequestsGroup = new RequestGroup(url);
   rootExport.addResource(graphQLRequestsGroup);
 
-  types.forEach((type) => {
-    if (type.name === rootQueryName || type.name === rootMutationName) {
-      let requestGroup = new RequestGroup(type.name);
-      requestGroup.parentId = graphQLRequestsGroup._id;
-      rootExport.addResource(requestGroup);
+  const { mutations, queries } = processSchema(schema);
 
-      let requestType = type.name == rootQueryName ? "query" : "mutation";
+  // queries
+  const queriesRequestGroup = new RequestGroup("queries");
+  queriesRequestGroup.parentId = graphQLRequestsGroup._id;
+  for (const query of queries) {
+    const request = new Request(query.name);
+    request.url = '_.graphQlUrl';
+    request.headers.push({ 'Authorization': 'Bearer _.token' })
+    request.parentId = queriesRequestGroup._id;
+    request.body = new RequestBody(
+      query.gql,
+      JSON.stringify(query.variables, null, 2)
+    );
+    rootExport.addResource(request);
+  }
+  rootExport.addResource(queriesRequestGroup);
 
-      let fields = [...(type as IntrospectionObjectType).fields];
-      fields.sort((a, b) => {
-        if (a.name < b.name) {
-          return -1;
-        }
-        if (a.name > b.name) {
-          return 1;
-        }
-        return 0;
-      });
-
-      fields.forEach((rootField) => {
-        let request = new Request(rootField.name);
-        request.url = url;
-        request.parentId = requestGroup._id;
-
-        const variables: FullArgumentMap = new Map();
-        const requestMainBody = buildField(rootField, { variables, types });
-
-        let queryArgsText = buildQueryArgs(variables);
-        if (queryArgsText.length > 0) queryArgsText = " " + queryArgsText;
-
-        let bodyText =
-          requestType + queryArgsText + " {\n" + requestMainBody + "\n}";
-
-        const variablesObj: Record<string, any> = {};
-        for (const [variableName, { arg }] of variables.entries()) {
-          variablesObj[variableName] = getDefaultValueForArg(arg);
-        }
-
-        request.body = new RequestBody(
-          bodyText,
-          JSON.stringify(variablesObj, null, 2)
-        );
-        rootExport.addResource(request);
-      });
-    }
-  });
+  const mutationsRequestGroup = new RequestGroup("mutations");
+  mutationsRequestGroup.parentId = graphQLRequestsGroup._id;
+  for (const query of queries) {
+    const request = new Request(query.name);
+    request.url = '_.graphQlUrl';
+    request.headers.push({ 'Authorization': 'Bearer _.token' })
+    request.parentId = mutationsRequestGroup._id;
+    request.body = new RequestBody(
+      query.gql,
+      JSON.stringify(query.variables, null, 2)
+    );
+    rootExport.addResource(request);
+  }
+  rootExport.addResource(mutationsRequestGroup);
 
   return JSON.stringify(rootExport, null, 2);
 }

@@ -78,8 +78,8 @@ const generateRequestsAction: WorkspaceAction = {
           submitName: "Create Requests",
         });
       } catch (error) {
-        if (!error.message.includes("cancelled")) {
-          console.error(error.message);
+        if (!(error as Error).message.includes("cancelled")) {
+          console.error((error as Error).message);
         }
         return;
       }
