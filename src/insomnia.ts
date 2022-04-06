@@ -23,8 +23,8 @@ export function buildInsomniaDataFile(
   queriesRequestGroup.parentId = graphQLRequestsGroup._id;
   for (const query of queries) {
     const request = new Request(query.name);
-    request.url = '_.graphQlUrl';
-    request.headers.push({ 'Authorization': 'Bearer _.token' })
+    request.url = '{{ _.graphQlUrl }}';
+    request.headers.push({ name: 'Authorization', value: 'Bearer {{ _.token }}' })
     request.parentId = queriesRequestGroup._id;
     request.body = new RequestBody(
       query.gql,
@@ -34,16 +34,17 @@ export function buildInsomniaDataFile(
   }
   rootExport.addResource(queriesRequestGroup);
 
+  // mutations
   const mutationsRequestGroup = new RequestGroup("mutations");
   mutationsRequestGroup.parentId = graphQLRequestsGroup._id;
-  for (const query of queries) {
-    const request = new Request(query.name);
-    request.url = '_.graphQlUrl';
-    request.headers.push({ 'Authorization': 'Bearer _.token' })
+  for (const mutation of mutations) {
+    const request = new Request(mutation.name);
+    request.url = '{{ _.graphQlUrl }}';
+    request.headers.push({ name: 'Authorization', value: 'Bearer {{ _.token }}' })
     request.parentId = mutationsRequestGroup._id;
     request.body = new RequestBody(
-      query.gql,
-      JSON.stringify(query.variables, null, 2)
+      mutation.gql,
+      JSON.stringify(mutation.variables, null, 2)
     );
     rootExport.addResource(request);
   }
