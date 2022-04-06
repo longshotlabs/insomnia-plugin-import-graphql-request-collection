@@ -8,7 +8,7 @@ Gets the GraphQL schema from a URL and creates a request collection for all poss
 
 Clone this repo, and then in the cloned project folder:
 
-```
+```sh
 # pick correct one
 npm run install-on-ubuntu
 npm run install-on-mac

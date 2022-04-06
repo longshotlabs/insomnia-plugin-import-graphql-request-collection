@@ -1,0 +1,6 @@
+mkdir -p $HOME/"Library/Application Support/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection/"
+cp -r ./build/ $HOME/"Library/Application Support/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection/build/"
+cp ./package.json $HOME/"Library/Application Support/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection/package.json"
+cp ./cover.svg $HOME/"Library/Application Support/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection/cover.svg"
+cp ./icon.svg $HOME/"Library/Application Support/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection/icon.svg"
+echo "Installed!"

@@ -1,6 +1,6 @@
 {
   "name": "insomna-plugin-import-graphql-request-collection",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "build/plugin.js",
   "insomnia": {
     "name": "import-graphql-request-collection",
@@ -23,8 +23,8 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "install-on-mac": "npm install && npm run build && mkdir -p \"~/Library/Application\\ Support/Insomnia/plugins/\" && cp -r ./ \"~/Library/Application\\ Support/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection\"",
-    "install-on-ubuntu": "npm install && npm run build && mkdir -p ~/.config/Insomnia/plugins/ && cp -r ./ ~/.config/Insomnia/plugins/insomnia-plugin-import-graphql-request-collection"
+    "install-on-mac": "npm install && npm run build && ./install-mac.sh",
+    "install-on-ubuntu": "npm install && npm run build && ./install-ubuntu.sh"
   },
   "dependencies": {
     "graphql": "^15.6.0"
